@@ -11,13 +11,12 @@ import (
 
 // styles
 var (
-	defaultStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
-	activeStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
-	focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
+	defaultStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
+	activeStyle  	   = lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
+	focusedStyle 	   = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
 	activeMarkerStyle  = "✅"
-	cursorStyle  = "\t➜"
+	cursorStyle  	   = "\t➜"
 )
-
 
 type Model struct {
 	profiles      []persona.Profile
@@ -27,9 +26,7 @@ type Model struct {
 	filter        string
 }
 
-
 func (m Model) Init() tea.Cmd { return nil }
-
 
 func NewProfileModel(profiles []persona.Profile, activeName string) Model {
 	return Model{
@@ -41,7 +38,6 @@ func NewProfileModel(profiles []persona.Profile, activeName string) Model {
 	}
 }
 
-
 func (m Model) SelectedProfile() *persona.Profile {
 	if m.selectedIndex >= 0 && m.selectedIndex < len(m.profiles) {
 		return &m.profiles[m.selectedIndex]
@@ -49,7 +45,6 @@ func (m Model) SelectedProfile() *persona.Profile {
 
 	return nil
 }
-
 
 // updates based on keyboard control
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -86,7 +81,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-
 // filters profiles based on the string
 func (m Model) filteredProfiles() []persona.Profile {
 	var f []persona.Profile
@@ -117,7 +111,6 @@ func (m Model) filteredProfiles() []persona.Profile {
 	return f
 }
 
-
 // maps the filtered index back to the original index
 func (m Model) getOriginalIndex(index int) int {
 	f := m.filteredProfiles()
@@ -128,7 +121,6 @@ func (m Model) getOriginalIndex(index int) int {
 	}
 	return -1
 }
-
 
 func (m Model) View() string {
 	f := m.filteredProfiles()
