@@ -1,12 +1,9 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"persona/internal/persona"
 	"persona/internal/tui"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -51,18 +48,32 @@ var editCmd = &cobra.Command{
 			selectedProfile = selected
 		}
 
-		editedProfile := editProfile(*selectedProfile)
-		if editedProfile == nil {
+		// Create form fields with current profile values
+		fields := tui.CreateProfileFormFields(selectedProfile, true)
+
+		// Start form TUI
+		values := tui.StartForm("Edit Profile", fields, func(vals map[string]string) bool {
+			// Get new values from form (form returns original value if field wasn't changed)
+			editedProfile := &persona.Profile{
+				Name:        vals["Profile name"],
+				User:        vals["Git user name"],
+				Email:       vals["Git email"],
+				SigningKey:  vals["Signing key"],
+				Description: vals["Description"],
+			}
+
+			if err := updateProfile(*selectedProfile, *editedProfile); err != nil {
+				fmt.Printf("❌ Failed to update profile: %s\n", err)
+				return false
+			}
+
+			fmt.Printf("✅ Profile '%s' updated successfully\n", editedProfile.Name)
+			return true
+		})
+
+		if values == nil {
 			fmt.Println("Edit cancelled.")
-			return
 		}
-
-		if err := updateProfile(*selectedProfile, *editedProfile); err != nil {
-			fmt.Printf("❌ Failed to update profile: %s\n", err)
-			return
-		}
-
-		fmt.Printf("✅ Profile '%s' updated successfully\n", editedProfile.Name)
 	},
 }
 
@@ -70,57 +81,6 @@ func init() {
 	rootCmd.AddCommand(editCmd)
 }
 
-// editProfile interactively edits a profile's fields
-func editProfile(profile persona.Profile) *persona.Profile {
-	fmt.Printf("\n📝 Editing profile: %s\n", profile.Name)
-	fmt.Println("Press Enter to keep current value, or type new value")
-	fmt.Println()
-
-	newName := promptForEdit("Profile name", profile.Name)
-	if newName == "" {
-		fmt.Println("❌ Profile name cannot be empty")
-		return nil
-	}
-
-	newUser := promptForEdit("Git user name", profile.User)
-	if newUser == "" {
-		fmt.Println("❌ User name cannot be empty")
-		return nil
-	}
-
-	newEmail := promptForEdit("Git email", profile.Email)
-	if newEmail == "" {
-		fmt.Println("❌ Email cannot be empty")
-		return nil
-	}
-
-	newSigningKey := promptForEdit("Signing key", profile.SigningKey)
-
-	newDescription := promptForEdit("Description", profile.Description)
-
-	return &persona.Profile{
-		Name:        newName,
-		User:        newUser,
-		Email:       newEmail,
-		SigningKey:  newSigningKey,
-		Description: newDescription,
-	}
-}
-
-// promptForEdit prompts the user to edit a field with current value as default
-func promptForEdit(fieldName, currentValue string) string {
-	prompt := fmt.Sprintf("%s [%s]: ", fieldName, currentValue)
-	fmt.Print(prompt)
-	reader := bufio.NewReader(os.Stdin)
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(input)
-	
-	if input == "" {
-		return currentValue
-	}
-	
-	return input
-}
 
 // updateProfile updates a profile in the config
 func updateProfile(oldProfile, newProfile persona.Profile) error {

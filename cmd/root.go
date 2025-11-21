@@ -24,9 +24,8 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"persona/internal/persona"
-	"strings"
+	"persona/internal/tui"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -39,46 +38,22 @@ var rootCmd = &cobra.Command{
 	Short: "Persona is a CLI tool for managing your git profiles.",
 	Long:  `Persona is a CLI tool for managing your git profiles.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Persona is a CLI tool for managing your git profiles.")
-
 		activeProfile := viper.GetString("active_profile")
+		var activeProfileData *persona.Profile
+
 		if activeProfile != "" {
 			var profiles []persona.Profile
 			if err := viper.UnmarshalKey("profiles", &profiles); err == nil {
 				for _, profile := range profiles {
 					if profile.Name == activeProfile {
-						fmt.Printf("\n✅ Active Profile: %s\n", profile.Name)
-						fmt.Printf("   User: %s\n", profile.User)
-						fmt.Printf("   Email: %s\n", profile.Email)
-						if profile.SigningKey != "" {
-							fmt.Printf("   Signing Key: %s\n", profile.SigningKey)
-						}
-						if profile.Description != "" {
-							fmt.Printf("   Description: %s\n", profile.Description)
-						}
+						activeProfileData = &profile
 						break
 					}
 				}
 			}
-		} else {
-			fmt.Println("\n❌ No active profile set. Use `persona add` to add a profile or `persona use` to select a profile if you already have one.")
 		}
 
-		fmt.Println("\n📝 Git Identity:")
-
-		out, err := exec.Command("git", "config", "user.name").Output()
-		gitUserName := strings.TrimSpace(string(out))
-		if err != nil || gitUserName == "" {
-			gitUserName = "Not configured"
-		}
-		fmt.Printf("   User Name: %s\n", gitUserName)
-
-		out, err = exec.Command("git", "config", "user.email").Output()
-		gitUserEmail := strings.TrimSpace(string(out))
-		if err != nil || gitUserEmail == "" {
-			gitUserEmail = "Not configured"
-		}
-		fmt.Printf("   Email: %s\n", gitUserEmail)
+		tui.StartInfo(activeProfileData, "Persona - Git Profile Manager")
 	},
 }
 

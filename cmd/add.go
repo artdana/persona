@@ -1,11 +1,10 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"persona/internal/persona"
-	"strings"
+	"persona/internal/tui"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -19,73 +18,61 @@ var addCmd = &cobra.Command{
 		var profileName string
 		if len(args) > 0 {
 			profileName = args[0]
-		} else {
-			profileName = promptForInput("Profile name: ")
-		}
-
-		if profileName == "" {
-			fmt.Println("❌ Profile name cannot be empty")
-			return
 		}
 
 		// Check if profile already exists
-		if profileExists(profileName) {
+		if profileName != "" && profileExists(profileName) {
 			fmt.Printf("❌ Profile '%s' already exists\n", profileName)
 			return
 		}
 
-		// Create new profile
-		profile := createProfile(profileName)
-		if profile == nil {
-			return
+		// Create form fields
+		fields := tui.CreateProfileFormFields(nil, false)
+		if profileName != "" {
+			fields[0].Value = profileName
+			fields[0].Placeholder = profileName
 		}
 
-		// Save profile to config
-		if err := saveProfile(*profile); err != nil {
-			fmt.Printf("❌ Failed to save profile: %s\n", err)
-			return
-		}
+		// Start form TUI
+		values := tui.StartForm("Add New Profile", fields, func(vals map[string]string) bool {
+			name := vals["Profile name"]
+			if name == "" {
+				return false
+			}
 
-		fmt.Printf("✅ Profile '%s' added successfully\n", profileName)
+			// Check if profile already exists
+			if profileExists(name) {
+				fmt.Printf("❌ Profile '%s' already exists\n", name)
+				return false
+			}
+
+			// Create profile
+			profile := &persona.Profile{
+				Name:        name,
+				User:        vals["Git user name"],
+				Email:       vals["Git email"],
+				SigningKey:  vals["Signing key"],
+				Description: vals["Description"],
+			}
+
+			// Save profile
+			if err := saveProfile(*profile); err != nil {
+				fmt.Printf("❌ Failed to save profile: %s\n", err)
+				return false
+			}
+
+			fmt.Printf("✅ Profile '%s' added successfully\n", name)
+			return true
+		})
+
+		if values == nil {
+			fmt.Println("Add cancelled.")
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(addCmd)
-}
-
-// promptForInput prompts the user for input and returns the trimmed result
-func promptForInput(prompt string) string {
-	fmt.Print(prompt)
-	reader := bufio.NewReader(os.Stdin)
-	input, _ := reader.ReadString('\n')
-	return strings.TrimSpace(input)
-}
-
-// createProfile interactively creates a new profile
-func createProfile(name string) *persona.Profile {
-	user := promptForInput("Git user name: ")
-	if user == "" {
-		fmt.Println("❌ User name cannot be empty")
-		return nil
-	}
-
-	email := promptForInput("Git email: ")
-	if email == "" {
-		fmt.Println("❌ Email cannot be empty")
-		return nil
-	}
-
-	signingKey := promptForInput("Signing key (optional): ")
-	description := promptForInput("Description (optional): ")
-
-	return &persona.Profile{
-		Name:        name,
-		User:        user,
-		Email:       email,
-		SigningKey:  signingKey,
-		Description: description,
-	}
 }
 
 // saveProfile saves a profile to the config file

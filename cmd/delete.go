@@ -1,12 +1,9 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"persona/internal/persona"
 	"persona/internal/tui"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -73,7 +70,13 @@ var deleteCmd = &cobra.Command{
 			selectedProfile = selected
 		}
 
-		if !confirmDeletion(selectedProfile.Name) {
+		// Confirm deletion with TUI
+		confirmed := tui.StartConfirm(
+			"Delete Profile",
+			fmt.Sprintf("Are you sure you want to delete profile '%s'?", selectedProfile.Name),
+		)
+
+		if !confirmed {
 			fmt.Println("Deletion cancelled.")
 			return
 		}
@@ -89,14 +92,6 @@ var deleteCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(deleteCmd)
-}
-
-func confirmDeletion(profileName string) bool {
-	fmt.Printf("Are you sure you want to delete profile '%s'? (y/N): ", profileName)
-	reader := bufio.NewReader(os.Stdin)
-	response, _ := reader.ReadString('\n')
-	response = strings.TrimSpace(strings.ToLower(response))
-	return response == "y" || response == "yes"
 }
 
 func deleteProfile(profileName string) error {

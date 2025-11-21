@@ -6,16 +6,6 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-)
-
-// styles
-var (
-	defaultStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
-	activeStyle  	   = lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
-	focusedStyle 	   = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
-	activeMarkerStyle  = "✅"
-	cursorStyle  	   = "\t➜"
 )
 
 type Model struct {
@@ -126,35 +116,39 @@ func (m Model) View() string {
 	f := m.filteredProfiles()
 	var s strings.Builder
 
-	s.WriteString(defaultStyle.Render(fmt.Sprintf("\nSearch:%s", m.filter)))
+	s.WriteString(TitleStyle.Render("Select Profile"))
+	s.WriteString("\n\n")
+	s.WriteString(MutedStyle.Render(fmt.Sprintf("Search: %s", m.filter)))
 	s.WriteString("\n\n")
 
 	for i, p := range f {
 		cursor := ""
 		if i == m.cursor {
-			cursor = cursorStyle
+			cursor = CursorStyle + " "
 		}
 
 		activeMarker := ""
 		if p.Name == m.activeName {
-			activeMarker = activeMarkerStyle
+			activeMarker = ActiveMarkerStyle + " "
 		}
 
 		line := fmt.Sprintf("%s[%s] %s: %s", cursor, activeMarker, p.Name, p.User)
 
 		if m.cursor == i {
 			if p.Name == m.activeName {
-				line = activeStyle.Render(line)
+				line = ActiveStyle.Render(line)
 			} else {
-				line = focusedStyle.Render(line)
+				line = FocusedStyle.Render(line)
 			}
-			preview := fmt.Sprintf("\t\nEmail: %s\nDescription: %s\n", p.Email, p.Description)
-			line += lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render(preview)
+			preview := fmt.Sprintf("\n  Email: %s\n  Description: %s\n", p.Email, p.Description)
+			line += MutedStyle.Render(preview)
 		}
 
 		s.WriteString(line + "\n")
 	}
 
-	s.WriteString("\nUse ↑/↓ to navigate, Enter to select, type to filter, escape to quit.")
-	return s.String()
+	s.WriteString("\n")
+	help := "↑/↓: Navigate  Enter: Select  Type: Filter  Esc: Quit"
+	s.WriteString(HelpStyle.Render(help))
+	return BorderStyle.Render(s.String())
 }
